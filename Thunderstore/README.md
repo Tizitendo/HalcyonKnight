@@ -9,17 +9,14 @@ Makes the halcyonite fight more dynamic and harder
 * Whirlwind:
     * Increased speed by 50%
     * Increased cooldown: 10s -> 15s
-    * Does not fall off when over an edge
     * Immune to stun
 
 * Poke:
     * Halcyonite can now move during this attack
-    * Decreased damage by 25%
     * Minimum distance: 0m
-    * Decreased animation speed by 20%
-    * Decreased horizontal hitbox size
     * Increased vertical hitbox size
     * Decreased knockback to 2000 -> 500
+    * decrease attack speed by 10%
 
 * Slash:
     * Decreased hitbox height, can now be jumped over

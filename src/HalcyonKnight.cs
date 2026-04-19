@@ -45,8 +45,8 @@ public class HalcyonKnight : BaseUnityPlugin
 		stateConfig = new(RoR2_DLC2_Halcyonite.EntityStates_HalcyoniteMonster_GoldenSwipe_asset);
 		AssetAsyncReferenceManager<EntityStateConfiguration>.LoadAsset(stateConfig).Completed += (x) =>
 		{
-			x.Result.TryModifyFieldValue<float>("baseDuration", 1.2f); // 1
-			x.Result.TryModifyFieldValue<float>("damageCoefficient", 1.2f); // 1.5
+			x.Result.TryModifyFieldValue<float>("baseDuration", 1.1f); // 1
+			//x.Result.TryModifyFieldValue<float>("damageCoefficient", 1.2f); // 1.5
 			x.Result.TryModifyFieldValue<float>("pushAwayForce", 500f); // 2000
 		};
 
@@ -67,12 +67,15 @@ public class HalcyonKnight : BaseUnityPlugin
 					case "Golden Swipe":
 						skillDriver.minDistance = 0f;
 						skillDriver.movementType = AISkillDriver.MovementType.FleeMoveTarget;
+						skillDriver.moveInputScale = 0.7f;
 						break;
 					case "Golden Slash":
 						skillDriver.movementType = AISkillDriver.MovementType.FleeMoveTarget;
+						skillDriver.moveInputScale = 0.7f;
 						break;
 					case "TriLaser":
 						skillDriver.minDistance = 10f;
+						skillDriver.moveInputScale = 0.7f;
 						skillDriver.movementType = AISkillDriver.MovementType.FleeMoveTarget;
 						break;
 				}
@@ -97,8 +100,8 @@ public class HalcyonKnight : BaseUnityPlugin
 		orig(self, body);
 		if (body.name == "HalcyoniteBody(Clone)")
 		{
-			body.modelLocator.modelTransform.GetChild(4).localScale = new Vector3(4f, 6f, 12f);
-			body.modelLocator.modelTransform.GetChild(7).localScale = new Vector3(15f, 1.3f, 9f);
+			body.modelLocator.modelTransform.GetChild(4).localScale = new Vector3(4f, 6f, 12f); //poke
+			body.modelLocator.modelTransform.GetChild(7).localScale = new Vector3(15f, 1.3f, 9f); //swipe
 		}
 	}
 
