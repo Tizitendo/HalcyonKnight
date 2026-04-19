@@ -14,14 +14,17 @@ Makes the halcyonite fight more dynamic and harder
 * Poke:
     * Halcyonite can now move during this attack
     * Minimum distance: 0m
-    * Increased vertical hitbox size
+    * Increased vertical hitbox size: 5m -> 6m
+    * Decreased width: 4m -> 3m
+    * Decrease hitbox length: 13m -> 12m
     * Decreased knockback to 2000 -> 500
-    * decrease attack speed by 10%
+    * Max distance: 20m -> 18m
 
 * Slash:
     * Decreased hitbox height, can now be jumped over
     * Halcyonite can now move during this attack
     * Decreased knockback to 2000 -> 500
+    * Max distance: 15m -> 10m
 
 * Laser:
     * Increased laser count: 3 -> 5
