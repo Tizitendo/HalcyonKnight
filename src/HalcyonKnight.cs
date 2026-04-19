@@ -72,7 +72,7 @@ public class HalcyonKnight : BaseUnityPlugin
 						skillDriver.movementType = AISkillDriver.MovementType.FleeMoveTarget;
 						break;
 					case "TriLaser":
-						skillDriver.minDistance = 5f;
+						skillDriver.minDistance = 10f;
 						skillDriver.movementType = AISkillDriver.MovementType.FleeMoveTarget;
 						break;
 				}

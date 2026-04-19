@@ -29,7 +29,7 @@ Makes the halcyonite fight more dynamic and harder
 * Laser:
     * Increased laser count: 3 -> 5
     * Decreased time to activate: 3s -> 1.5s
-    * Minimum distance: 5m
+    * Minimum distance: 10m
 
 ## Contact
 For questions or bug reports, you can find me in the [RoR2 Modding Server](https://discord.gg/YxEdVK7xWM) @Onyx
