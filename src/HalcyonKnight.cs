@@ -1,4 +1,5 @@
 using BepInEx;
+using HG;
 using Logger;
 using MiscFixes.Modules;
 using Mono.Cecil.Cil;
@@ -11,6 +12,7 @@ using RoR2BepInExPack.GameAssetPathsBetter;
 using System;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
+using UnityEngine.Networking;
 
 [assembly: HG.Reflection.SearchableAttribute.OptIn]
 
@@ -23,7 +25,7 @@ public class HalcyonKnight : BaseUnityPlugin
     public const string PluginGUID = PluginAuthor + "." + PluginName;
     public const string PluginAuthor = "Onyx";
     public const string PluginName = "HalcyonKnight";
-    public const string PluginVersion = "1.1.0";
+    public const string PluginVersion = "1.1.4";
 
     public void Awake()
     {
@@ -120,6 +122,13 @@ public class HalcyonKnight : BaseUnityPlugin
 			}
 		};
 
+		obj = new(RoR2_DLC2.ShrineHalcyonite_prefab);
+		AssetAsyncReferenceManager<GameObject>.LoadAsset(obj).Completed += (x) =>
+		{
+			BossGroup bossGroup = x.Result.EnsureComponent<BossGroup>();
+			x.Result.GetComponent<PurchaseInteraction>().setUnavailableOnTeleporterActivated = true;
+		};
+
 		AssetReferenceT<SkillDef> skillDef = new(RoR2_DLC2_Halcyonite.HalcyoniteMonsterWhirlwindRush_asset);
 		AssetAsyncReferenceManager<SkillDef>.LoadAsset(skillDef).Completed += (x) =>
 		{
@@ -135,11 +144,49 @@ public class HalcyonKnight : BaseUnityPlugin
 		};
 
 		IL.EntityStates.Halcyonite.TriLaser.FixedUpdate += MoreLasers;
-		IL.RoR2.CombatDirector.Spawn += ForceHalcyonBoss;
 		On.EntityStates.Halcyonite.TriLaser.OnEnter += TriLaser_OnEnter;
 		On.RoR2.CharacterMaster.OnBodyStart += OnBodyStart;
 		On.EntityStates.Halcyonite.WhirlWindPersuitCycle.UpdateFindTarget += UpdateFindTarget;
 		IL.RoR2.HalcyoniteShrineInteractable.DrainConditionMet += DrainConditionMet;
+		On.RoR2.PurchaseInteraction.OnTeleporterBeginCharging += OnTeleporterBeginCharging;
+		On.RoR2.HalcyoniteShrineInteractable.Awake += HalcyoniteShrineInteractable_Awake;
+	}
+
+	private void HalcyoniteShrineInteractable_Awake(On.RoR2.HalcyoniteShrineInteractable.orig_Awake orig, HalcyoniteShrineInteractable self)
+	{
+		orig(self);
+		InstanceTracker.Add<HalcyoniteShrineInteractable>(self);
+	}
+
+	private void OnTeleporterBeginCharging(On.RoR2.PurchaseInteraction.orig_OnTeleporterBeginCharging orig, TeleporterInteraction self)
+	{
+		orig(self);
+		if (!NetworkServer.active)
+		{
+			return;
+		}
+		foreach (PurchaseInteraction instances in InstanceTracker.GetInstancesList<PurchaseInteraction>())
+		{
+			if (instances.name == "ShrineHalcyonite(Clone)")
+			{
+				if (instances.TryGetComponent<ChildLocator>(out ChildLocator childLocator))
+				{
+					Transform child;
+					if (childLocator.TryFindChild("GoldSiphonNearbyBodyAttachment", out child))
+					{
+						child.gameObject.SetActive(false);
+					}
+					if (childLocator.TryFindChild("StormPortalIndicator", out child))
+					{
+						child.gameObject.SetActive(false);
+					}
+					if (childLocator.TryFindChild("RangeIndicator", out child))
+					{
+						child.gameObject.SetActive(false);
+					}
+				}
+			}
+		}
 	}
 
 	private void DrainConditionMet(ILContext il)
@@ -169,15 +216,15 @@ public class HalcyonKnight : BaseUnityPlugin
 		{
 			if (self.goldDrained > self.lowGoldCost && self.goldDrained < self.midGoldCost)
 			{
-				return (int)(0.7 + 0.04 * Run.instance.ambientLevel);
+				return (int)(0.7 + 0.06 * Run.instance.ambientLevel);
 			}
 			if (self.goldDrained > self.midGoldCost && self.goldDrained < self.maxGoldCost)
 			{
-				return (int)(1.4 + 0.08 * Run.instance.ambientLevel);
+				return (int)(1.4 + 0.12 * Run.instance.ambientLevel);
 			}
 			if (self.goldDrained >= self.maxGoldCost)
 			{
-				return (int)(2.1 + 0.12 * Run.instance.ambientLevel);
+				return (int)(2.1 + 0.18 * Run.instance.ambientLevel);
 			}
 			return 0;
 		}
@@ -217,6 +264,8 @@ public class HalcyonKnight : BaseUnityPlugin
 			body.modelLocator.modelTransform.GetChild(4).localScale = new Vector3(3f, 6f, 12f); //poke
 			body.modelLocator.modelTransform.GetChild(7).localScale = new Vector3(15f, 1f, 10f); //swipe
 			body.baseMoveSpeed = 9; // 6.6
+			body.baseNameToken = "Halcyon Knight";
+			body.subtitleNameToken = "Forsaken Heir";
 		}
 	}
 
@@ -225,35 +274,6 @@ public class HalcyonKnight : BaseUnityPlugin
 		orig(self);
 		self.targetTimeStamp = 0.1f;
 		self.fireCooldown = 0.3f;
-	}
-
-	static void ForceHalcyonBoss(ILContext il)
-	{
-		ILCursor c = new ILCursor(il);
-
-		if (c.TryGotoNext(MoveType.After,
-				x => x.MatchCallOrCallvirt(typeof(DirectorCore), nameof(DirectorCore.TrySpawnObject))
-			))
-		{
-			c.Emit(OpCodes.Ldarg_0);
-			c.EmitDelegate<Func<GameObject, CombatDirector, GameObject>>(HalcyonBoss);
-		}
-		else
-		{
-			Log.Error(il.Method.Name + " IL Hook failed!");
-		}
-
-		GameObject HalcyonBoss(GameObject enemy, CombatDirector self)
-		{
-			if (self.isHalcyonShrineSpawn && enemy)
-			{
-				if (enemy.TryGetComponent<CharacterMaster>(out CharacterMaster master))
-				{
-					master.isBoss = true;
-				}
-			}
-			return enemy;
-		}
 	}
 
 	static void MoreLasers(ILContext il)

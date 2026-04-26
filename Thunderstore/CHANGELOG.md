@@ -1,3 +1,11 @@
+## 1.1.4
+* Fixed tp behaving weird after finishing halc shrine
+
+## 1.1.3
+* Increased scaling a bit more
+* added hud boss bar
+* Shrine can't be activated after tp anymore
+
 ## 1.1.2
 * Increased scaling a bit
 

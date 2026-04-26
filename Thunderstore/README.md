@@ -3,6 +3,7 @@
 Makes the halcyonite fight more dynamic and harder
 
 * General:
+    * Shrine can't be activated after tp
     * Halcyonites spawned from shrines count as bosses
     * Enters whirlwind over the edge
     * Movement speed: 6.6 -> 9
