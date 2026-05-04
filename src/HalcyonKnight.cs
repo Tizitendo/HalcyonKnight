@@ -1,4 +1,5 @@
 using BepInEx;
+using BepInEx.Configuration;
 using HG;
 using Logger;
 using MiscFixes.Modules;
@@ -19,17 +20,23 @@ using UnityEngine.Networking;
 namespace HalcyonKnight;
 
 [BepInPlugin(PluginGUID, PluginName, PluginVersion)]
-
-public class HalcyonKnight : BaseUnityPlugin
+public sealed class HalcyonKnight : BaseUnityPlugin
 {
     public const string PluginGUID = PluginAuthor + "." + PluginName;
     public const string PluginAuthor = "Onyx";
     public const string PluginName = "HalcyonKnight";
-    public const string PluginVersion = "1.1.4";
+    public const string PluginVersion = "1.1.5";
 
-    public void Awake()
+	public static HalcyonKnight Instance;
+	public static ConfigEntry<bool> ChangeShrineCredits { get; set; }
+
+	static SpawnCard halcshrineCard;
+
+	public void Awake()
     {
-        Log.Init(Logger);
+		Log.Init(Logger);
+		Instance = SingletonHelper.Assign(Instance, this);
+		Options.Init();
 
 		AssetReferenceT<EntityStateConfiguration> stateConfig = new(RoR2_DLC2_Halcyonite.EntityStates_HalcyoniteMonster_ChargeTriLaser_asset);
 		AssetAsyncReferenceManager<EntityStateConfiguration>.LoadAsset(stateConfig).Completed += (x) =>
@@ -82,16 +89,17 @@ public class HalcyonKnight : BaseUnityPlugin
 				{
 					case "Golden Swipe":
 						skillDriver.minDistance = 0f;
-						skillDriver.movementType = AISkillDriver.MovementType.ChaseMoveTarget;
+						skillDriver.movementType = AISkillDriver.MovementType.FleeMoveTarget;
 						skillDriver.moveInputScale = 0.5f;
-						skillDriver.maxDistance = 18f;
-						skillDriver.driverUpdateTimerOverride = 2.5f;
+						skillDriver.maxDistance = 15f;
+						skillDriver.driverUpdateTimerOverride = 1.5f;
+						skillDriver.aimVectorMaxSpeedOverride = 0f;
 						break;
 					case "Golden Slash":
 						skillDriver.movementType = AISkillDriver.MovementType.FleeMoveTarget;
-						skillDriver.moveInputScale = 0.5f;
+						skillDriver.moveInputScale = 0.8f;
 						skillDriver.maxDistance = 10f;
-						skillDriver.driverUpdateTimerOverride = 2.5f;
+						skillDriver.driverUpdateTimerOverride = 2f;
 						break;
 					case "TriLaser":
 						skillDriver.minDistance = 15f;
@@ -149,13 +157,62 @@ public class HalcyonKnight : BaseUnityPlugin
 		On.EntityStates.Halcyonite.WhirlWindPersuitCycle.UpdateFindTarget += UpdateFindTarget;
 		IL.RoR2.HalcyoniteShrineInteractable.DrainConditionMet += DrainConditionMet;
 		On.RoR2.PurchaseInteraction.OnTeleporterBeginCharging += OnTeleporterBeginCharging;
-		On.RoR2.HalcyoniteShrineInteractable.Awake += HalcyoniteShrineInteractable_Awake;
+		On.EntityStates.ShrineHalcyonite.ShrineHalcyoniteBaseState.OnEnter += ShrineHalcyoniteBaseState_OnEnter;
+		On.RoR2.HalcyoniteShrineInteractable.CalculateCredits += HalcyoniteShrineInteractable_CalculateCredits;
+
+		OptionChangeShrineCredits(null, null);
+		ChangeShrineCredits.SettingChanged += OptionChangeShrineCredits;
 	}
 
-	private void HalcyoniteShrineInteractable_Awake(On.RoR2.HalcyoniteShrineInteractable.orig_Awake orig, HalcyoniteShrineInteractable self)
+	private void OptionChangeShrineCredits(object sender, EventArgs e)
+	{
+		if (ChangeShrineCredits.Value)
+		{
+			On.RoR2.SceneDirector.GenerateInteractableCardSelection += GenerateInteractableCardSelection;
+			AssetReferenceT<SpawnCard> interactableCard = new(RoR2_DLC2.iscShrineHalcyoniteTier1_asset);
+			AssetAsyncReferenceManager<SpawnCard>.LoadAsset(interactableCard).Completed += (x) =>
+			{
+				x.Result.directorCreditCost = 30;
+				halcshrineCard = x.Result;
+			};
+		} else {
+			On.RoR2.SceneDirector.GenerateInteractableCardSelection -= GenerateInteractableCardSelection;
+			AssetReferenceT<SpawnCard> interactableCard = new(RoR2_DLC2.iscShrineHalcyoniteTier1_asset);
+			AssetAsyncReferenceManager<SpawnCard>.LoadAsset(interactableCard).Completed += (x) =>
+			{
+				x.Result.directorCreditCost = 0;
+				halcshrineCard = x.Result;
+			};
+		}
+	}
+
+	private WeightedSelection<DirectorCard> GenerateInteractableCardSelection(On.RoR2.SceneDirector.orig_GenerateInteractableCardSelection orig, SceneDirector self)
+	{
+		WeightedSelection<DirectorCard> result = orig(self);
+		for(int i = 0; i < result.Count; i++)
+		{
+			WeightedSelection<DirectorCard>.ChoiceInfo choice = result.GetChoice(i);
+			if(choice.value.spawnCard == halcshrineCard)
+			{
+				result.ModifyChoiceWeight(i, choice.weight * 2);
+			}
+		}
+		return result;
+	}
+
+	private void ShrineHalcyoniteBaseState_OnEnter(On.EntityStates.ShrineHalcyonite.ShrineHalcyoniteBaseState.orig_OnEnter orig, EntityStates.ShrineHalcyonite.ShrineHalcyoniteBaseState self)
 	{
 		orig(self);
-		InstanceTracker.Add<HalcyoniteShrineInteractable>(self);
+		Debug.Log(self.outer.state);
+	}
+
+	private void HalcyoniteShrineInteractable_CalculateCredits(On.RoR2.HalcyoniteShrineInteractable.orig_CalculateCredits orig, HalcyoniteShrineInteractable self)
+	{
+		orig(self);
+		if (self.scaleMonsterCreditWithDifficultyCoefficient)
+		{
+			self.monsterCredit /= Math.Max(Run.instance.difficultyCoefficient / 2, 1);
+		}
 	}
 
 	private void OnTeleporterBeginCharging(On.RoR2.PurchaseInteraction.orig_OnTeleporterBeginCharging orig, TeleporterInteraction self)
@@ -169,7 +226,7 @@ public class HalcyonKnight : BaseUnityPlugin
 		{
 			if (instances.name == "ShrineHalcyonite(Clone)")
 			{
-				if (instances.TryGetComponent<ChildLocator>(out ChildLocator childLocator))
+				if (instances.TryGetComponent(out ChildLocator childLocator))
 				{
 					Transform child;
 					if (childLocator.TryFindChild("GoldSiphonNearbyBodyAttachment", out child))
@@ -181,6 +238,10 @@ public class HalcyonKnight : BaseUnityPlugin
 						child.gameObject.SetActive(false);
 					}
 					if (childLocator.TryFindChild("RangeIndicator", out child))
+					{
+						child.gameObject.SetActive(false);
+					}
+					if (childLocator.TryFindChild("GoldshoresPortalIndicator", out child))
 					{
 						child.gameObject.SetActive(false);
 					}

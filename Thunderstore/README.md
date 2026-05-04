@@ -8,6 +8,7 @@ Makes the halcyonite fight more dynamic and harder
     * Enters whirlwind over the edge
     * Movement speed: 6.6 -> 9
     * Prioritizes players
+    * Added option to increase stage shrine 1 credit cost 0 -> 30. for reference stage 2+ is 50. (default: disabled)
     * Way more tiny changes 
 
 * Whirlwind:

@@ -1,3 +1,9 @@
+## 1.1.5
+* Increased Movement speed while performing a melee attack
+* Added option to increase stage shrine 1 credit cost 0 -> 30. for reference stage 2+ is 50. (default: disabled)
+* Reduced golem credits
+* Can now longer turn while doing the poke
+
 ## 1.1.4
 * Fixed tp behaving weird after finishing halc shrine
 
