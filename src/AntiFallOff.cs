@@ -17,7 +17,7 @@ static class AntiFallOff
 		AssetReferenceT<GameObject> obj = new(RoR2_DLC2_Halcyonite.HalcyoniteBody_prefab);
 		AssetAsyncReferenceManager<GameObject>.LoadAsset(obj).Completed += (x) =>
 		{
-			x.Result.EnsureComponent<ForceWhirlWindState>();
+			x.Result.EnsureComponent<ExtraChanges>();
 		};
 
 		On.EntityStates.Halcyonite.WhirlWindPersuitCycle.OnEnter += WhirlWindPersuitCycle_OnEnter;
@@ -64,15 +64,17 @@ static class AntiFallOff
 	{
 		if (self.TryGetComponent<SetStateOnHurt>(out SetStateOnHurt setStateOnHurt))
 		{
-			setStateOnHurt.canBeHitStunned = stunnable;
 			setStateOnHurt.canBeStunned = stunnable;
 		}
 	}
 }
 
-public class ForceWhirlWindState : MonoBehaviour
+public class ExtraChanges : MonoBehaviour
 {
-	EntityStateMachine stateMachine;
+	EntityStateMachine weaponStateMachine;
+	EntityStateMachine bodyStateMachine;
+
+	const float maxStunDuration = 0.5f;
 
 	void Awake()
 	{
@@ -80,23 +82,37 @@ public class ForceWhirlWindState : MonoBehaviour
 		{
 			if (entityStateMachine.customName == "Weapon")
 			{
-				stateMachine = entityStateMachine;
+				weaponStateMachine = entityStateMachine;
+			}
+			if (entityStateMachine.customName == "Body")
+			{
+				bodyStateMachine = entityStateMachine;
 			}
 		}
 	}
 
 	void FixedUpdate()
 	{
-		if (!stateMachine)
+		if (!weaponStateMachine)
 			return;
-		if (stateMachine.state is not WhirlwindWarmUp &&
-		stateMachine.state is not WhirlWindPersuitCycle &&
-		stateMachine.nextState is not WhirlwindWarmUp &&
-		stateMachine.nextState is not WhirlWindPersuitCycle)
+		if (weaponStateMachine.state is not WhirlwindWarmUp &&
+		weaponStateMachine.state is not WhirlWindPersuitCycle &&
+		weaponStateMachine.nextState is not WhirlwindWarmUp &&
+		weaponStateMachine.nextState is not WhirlWindPersuitCycle)
 		{
 			if (!Physics.Raycast(new Ray(transform.position, Vector3.down), out _, 200f, LayerIndex.world.mask, QueryTriggerInteraction.Ignore))
 			{
-				stateMachine.SetInterruptState(new EntityStates.Halcyonite.WhirlwindWarmUp(), InterruptPriority.Immobilize);
+				weaponStateMachine.SetInterruptState(new EntityStates.Halcyonite.WhirlwindWarmUp(), InterruptPriority.Immobilize);
+			}
+		}
+		if (bodyStateMachine.state is StunState)
+		{
+			StunState stunState = bodyStateMachine.state as StunState;
+			
+			if (stunState.duration - stunState.fixedAge > maxStunDuration)
+			{
+				stunState.duration = maxStunDuration + stunState.fixedAge;
+				stunState.stunDuration = maxStunDuration + stunState.fixedAge;
 			}
 		}
 	}

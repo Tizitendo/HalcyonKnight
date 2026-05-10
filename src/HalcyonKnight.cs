@@ -67,7 +67,7 @@ public sealed class HalcyonKnight : BaseUnityPlugin
 		stateConfig = new(RoR2_DLC2_Halcyonite.EntityStates_HalcyoniteMonster_GoldenSwipe_asset);
 		AssetAsyncReferenceManager<EntityStateConfiguration>.LoadAsset(stateConfig).Completed += (x) =>
 		{
-			//x.Result.TryModifyFieldValue<float>("baseDuration", 1.1f); // 1
+			x.Result.TryModifyFieldValue<float>("baseDuration", 1.3f); // 1
 			//x.Result.TryModifyFieldValue<float>("damageCoefficient", 1.2f); // 1.5
 			x.Result.TryModifyFieldValue<float>("pushAwayForce", 500f); // 2000
 		};
@@ -97,15 +97,15 @@ public sealed class HalcyonKnight : BaseUnityPlugin
 						break;
 					case "Golden Slash":
 						skillDriver.movementType = AISkillDriver.MovementType.FleeMoveTarget;
-						skillDriver.moveInputScale = 0.8f;
+						//skillDriver.moveInputScale = 0.8f;
 						skillDriver.maxDistance = 10f;
 						skillDriver.driverUpdateTimerOverride = 2f;
 						break;
 					case "TriLaser":
 						skillDriver.minDistance = 15f;
-						skillDriver.moveInputScale = 0.7f;
+						//skillDriver.moveInputScale = 0.7f;
 						skillDriver.driverUpdateTimerOverride = 2.5f;
-						skillDriver.movementType = AISkillDriver.MovementType.StrafeMovetarget;
+						skillDriver.movementType = AISkillDriver.MovementType.ChaseMoveTarget;
 						break;
 					case "WhirlwindRush":
 						skillDriver.minDistance = 20f; // 20
@@ -151,7 +151,7 @@ public sealed class HalcyonKnight : BaseUnityPlugin
 			swipeSkill.baseRechargeInterval = 7;
 		};
 
-		IL.EntityStates.Halcyonite.TriLaser.FixedUpdate += MoreLasers;
+		IL.EntityStates.Halcyonite.TriLaser.FixedUpdate += TriLaser_FixedUpdate;
 		On.EntityStates.Halcyonite.TriLaser.OnEnter += TriLaser_OnEnter;
 		On.RoR2.CharacterMaster.OnBodyStart += OnBodyStart;
 		On.EntityStates.Halcyonite.WhirlWindPersuitCycle.UpdateFindTarget += UpdateFindTarget;
@@ -159,6 +159,7 @@ public sealed class HalcyonKnight : BaseUnityPlugin
 		On.RoR2.PurchaseInteraction.OnTeleporterBeginCharging += OnTeleporterBeginCharging;
 		On.EntityStates.ShrineHalcyonite.ShrineHalcyoniteBaseState.OnEnter += ShrineHalcyoniteBaseState_OnEnter;
 		On.RoR2.HalcyoniteShrineInteractable.CalculateCredits += HalcyoniteShrineInteractable_CalculateCredits;
+		On.EntityStates.Halcyonite.TriLaser.FireTriLaser += TriLaser_FireTriLaser;
 
 		OptionChangeShrineCredits(null, null);
 		ChangeShrineCredits.SettingChanged += OptionChangeShrineCredits;
@@ -211,7 +212,7 @@ public sealed class HalcyonKnight : BaseUnityPlugin
 		orig(self);
 		if (self.scaleMonsterCreditWithDifficultyCoefficient)
 		{
-			self.monsterCredit /= Math.Max(Run.instance.difficultyCoefficient / 2, 1);
+			self.monsterCredit /= Math.Max(Run.instance.difficultyCoefficient * 0.3f, 1);
 		}
 	}
 
@@ -322,11 +323,15 @@ public sealed class HalcyonKnight : BaseUnityPlugin
 		orig(self, body);
 		if (body.name == "HalcyoniteBody(Clone)")
 		{
-			body.modelLocator.modelTransform.GetChild(4).localScale = new Vector3(3f, 6f, 12f); //poke
-			body.modelLocator.modelTransform.GetChild(7).localScale = new Vector3(15f, 1f, 10f); //swipe
+			body.modelLocator.modelTransform.GetChild(4).localScale = new Vector3(2.5f, 6f, 12f); //poke
+			body.modelLocator.modelTransform.GetChild(7).localScale = new Vector3(15f, 0.8f, 10f); //swipe
 			body.baseMoveSpeed = 9; // 6.6
 			body.baseNameToken = "Halcyon Knight";
 			body.subtitleNameToken = "Forsaken Heir";
+		}
+		if (body.TryGetComponent<SetStateOnHurt>(out SetStateOnHurt setStateOnHurt))
+		{
+			setStateOnHurt.canBeHitStunned = false;
 		}
 	}
 
@@ -337,7 +342,7 @@ public sealed class HalcyonKnight : BaseUnityPlugin
 		self.fireCooldown = 0.3f;
 	}
 
-	static void MoreLasers(ILContext il)
+	static void TriLaser_FixedUpdate(ILContext il)
 	{
 		ILCursor c = new ILCursor(il);
 		int patchCount = 0;
@@ -360,5 +365,21 @@ public sealed class HalcyonKnight : BaseUnityPlugin
 			Log.Error(il.Method.Name + " IL Hook failed!");
 		}
 		//Log.Info(il.Method.Name + " Patch Count: " + patchCount);
+	}
+
+	private void TriLaser_FireTriLaser(On.EntityStates.Halcyonite.TriLaser.orig_FireTriLaser orig, EntityStates.Halcyonite.TriLaser self)
+	{
+		orig(self);
+		foreach (BaseAI baseAI in self.characterBody.master.AiComponents)
+		{
+			if (baseAI.hasAimTarget)
+			{
+				if (Vector3.Distance(baseAI.skillDriverEvaluation.target.characterBody.transform.position, self.transform.position) < 15)
+				{
+					self.outer.SetNextStateToMain();
+				}
+				break;
+			}
+		}
 	}
 }

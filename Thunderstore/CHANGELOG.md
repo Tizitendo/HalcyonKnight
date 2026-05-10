@@ -1,3 +1,10 @@
+## 1.1.6
+* Trilaser interrupts when you get close
+* Increased golem scaling a bit again
+* Added max stun duration: 0.5s
+* Can no longer be hitstunned
+* Adjusted some of his speed stats
+
 ## 1.1.5
 * Increased Movement speed while performing a melee attack
 * Added option to increase stage shrine 1 credit cost 0 -> 30. for reference stage 2+ is 50. (default: disabled)
@@ -9,7 +16,7 @@
 
 ## 1.1.3
 * Increased scaling a bit more
-* added hud boss bar
+* Qdded hud boss bar
 * Shrine can't be activated after tp anymore
 
 ## 1.1.2
