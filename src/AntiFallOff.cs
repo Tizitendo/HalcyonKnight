@@ -30,7 +30,7 @@ static class AntiFallOff
 	static void WhirlWindPersuitCycle_UpdateLand(On.EntityStates.Halcyonite.WhirlWindPersuitCycle.orig_UpdateLand orig, EntityStates.Halcyonite.WhirlWindPersuitCycle self)
 	{
 		orig(self);
-		if (!Physics.Raycast(new Ray(self.transform.position, Vector3.down), out _, 200f, LayerIndex.world.mask, QueryTriggerInteraction.Ignore))
+		if (!Physics.Raycast(new Ray(self.transform.position, Vector3.down), out _, 50f, LayerIndex.world.mask, QueryTriggerInteraction.Ignore))
 		{
 			self.outer.SetNextState(new EntityStates.Halcyonite.WhirlwindWarmUp());
 		}
@@ -64,17 +64,22 @@ static class AntiFallOff
 	{
 		if (self.TryGetComponent<SetStateOnHurt>(out SetStateOnHurt setStateOnHurt))
 		{
-			setStateOnHurt.canBeStunned = stunnable;
+			if (self.TryGetComponent(out ExtraChanges extraChanges) && extraChanges.stunCooldown <= 0)
+			{
+				setStateOnHurt.canBeStunned = stunnable;
+			}
 		}
 	}
 }
 
 public class ExtraChanges : MonoBehaviour
 {
-	EntityStateMachine weaponStateMachine;
-	EntityStateMachine bodyStateMachine;
+	EntityStateMachine _weaponStateMachine;
+	EntityStateMachine _bodyStateMachine;
+	bool _wasStunned;
+	public float stunCooldown;
 
-	const float maxStunDuration = 0.5f;
+	public const float maxStunCooldown = 3f;
 
 	void Awake()
 	{
@@ -82,38 +87,58 @@ public class ExtraChanges : MonoBehaviour
 		{
 			if (entityStateMachine.customName == "Weapon")
 			{
-				weaponStateMachine = entityStateMachine;
+				_weaponStateMachine = entityStateMachine;
 			}
 			if (entityStateMachine.customName == "Body")
 			{
-				bodyStateMachine = entityStateMachine;
+				_bodyStateMachine = entityStateMachine;
 			}
 		}
 	}
 
 	void FixedUpdate()
 	{
-		if (!weaponStateMachine)
+		if (!_weaponStateMachine)
 			return;
-		if (weaponStateMachine.state is not WhirlwindWarmUp &&
-		weaponStateMachine.state is not WhirlWindPersuitCycle &&
-		weaponStateMachine.nextState is not WhirlwindWarmUp &&
-		weaponStateMachine.nextState is not WhirlWindPersuitCycle)
+		if (_weaponStateMachine.state is not WhirlwindWarmUp &&
+		_weaponStateMachine.state is not WhirlWindPersuitCycle &&
+		_weaponStateMachine.nextState is not WhirlwindWarmUp &&
+		_weaponStateMachine.nextState is not WhirlWindPersuitCycle)
 		{
-			if (!Physics.Raycast(new Ray(transform.position, Vector3.down), out _, 200f, LayerIndex.world.mask, QueryTriggerInteraction.Ignore))
+			if (!Physics.Raycast(new Ray(transform.position, Vector3.down), out _, 50f, LayerIndex.world.mask, QueryTriggerInteraction.Ignore) &&
+			_bodyStateMachine.CanInterruptState(InterruptPriority.Immobilize))
 			{
-				weaponStateMachine.SetInterruptState(new EntityStates.Halcyonite.WhirlwindWarmUp(), InterruptPriority.Immobilize);
+				_weaponStateMachine.SetInterruptState(new EntityStates.Halcyonite.WhirlwindWarmUp(), InterruptPriority.Immobilize);
 			}
 		}
-		if (bodyStateMachine.state is StunState)
+
+		if (_bodyStateMachine.state is StunState)
 		{
-			StunState stunState = bodyStateMachine.state as StunState;
-			
-			if (stunState.duration - stunState.fixedAge > maxStunDuration)
-			{
-				stunState.duration = maxStunDuration + stunState.fixedAge;
-				stunState.stunDuration = maxStunDuration + stunState.fixedAge;
+			_wasStunned = true;
+		} else {
+			if (_wasStunned) {
+				stunCooldown = maxStunCooldown;
+				if (TryGetComponent<SetStateOnHurt>(out SetStateOnHurt setStateOnHurt))
+				{
+					setStateOnHurt.canBeStunned = false;
+				}
 			}
+			_wasStunned = false;
+		}
+
+		if (_weaponStateMachine.state is not WhirlwindWarmUp &&
+		_weaponStateMachine.state is not WhirlWindPersuitCycle &&
+		_weaponStateMachine.nextState is not WhirlwindWarmUp &&
+		_weaponStateMachine.nextState is not WhirlWindPersuitCycle)
+		{
+			if(stunCooldown > 0 && stunCooldown - Time.fixedDeltaTime <= 0)
+			{
+				if (TryGetComponent<SetStateOnHurt>(out SetStateOnHurt setStateOnHurt))
+				{
+					setStateOnHurt.canBeStunned = true;
+				}
+			}
+			stunCooldown -= Time.fixedDeltaTime;
 		}
 	}
 }

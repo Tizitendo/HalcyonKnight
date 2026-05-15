@@ -4,7 +4,7 @@ Makes the halcyonite fight more dynamic and harder
 
 * General:
     * Shrine can't be activated after tp
-    * Max stun duration: 0.5s
+    * Stun cooldown: 3s
     * Can no longer be hitstunned
     * Halcyonites spawned from shrines count as bosses
     * Enters whirlwind over the edge
@@ -39,6 +39,7 @@ Makes the halcyonite fight more dynamic and harder
 
 * Laser:
     * Increased laser count: 3 -> 5
+    * Below 50% hp: 3 -> 15
     * Interrupts when you get close
     * Decreased time to activate: 3s -> 1.5s
     * Minimum distance: 10m

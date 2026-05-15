@@ -1,5 +1,6 @@
 using BepInEx;
 using BepInEx.Configuration;
+using EntityStates.Halcyonite;
 using HG;
 using Logger;
 using MiscFixes.Modules;
@@ -25,7 +26,7 @@ public sealed class HalcyonKnight : BaseUnityPlugin
     public const string PluginGUID = PluginAuthor + "." + PluginName;
     public const string PluginAuthor = "Onyx";
     public const string PluginName = "HalcyonKnight";
-    public const string PluginVersion = "1.1.5";
+    public const string PluginVersion = "1.1.7";
 
 	public static HalcyonKnight Instance;
 	public static ConfigEntry<bool> ChangeShrineCredits { get; set; }
@@ -312,7 +313,7 @@ public sealed class HalcyonKnight : BaseUnityPlugin
 		orig(self);
 		
 		if (!self.targetBody &&
-		Physics.Raycast(new Ray(self.transform.position, Vector3.down), out _, 200f, LayerIndex.world.mask, QueryTriggerInteraction.Ignore))
+		Physics.Raycast(new Ray(self.transform.position, Vector3.down), out _, 50f, LayerIndex.world.mask, QueryTriggerInteraction.Ignore))
 		{
 			self.outer.SetNextStateToMain();
 		}
@@ -355,9 +356,18 @@ public sealed class HalcyonKnight : BaseUnityPlugin
 			))
 		{
 			c.Index--;
-			c.Emit(OpCodes.Pop);
-			c.Emit(OpCodes.Ldc_I4, laserCount + 2);
+			c.Emit(OpCodes.Ldarg_0);
+			c.EmitDelegate<Func<int, TriLaser, int>>(MoreLasers);
 			patchCount++;
+		}
+
+		int MoreLasers(int laserCount, TriLaser self)
+		{
+			if (self.TryGetComponent(out HealthComponent healthComponent) && healthComponent.health <= healthComponent.fullCombinedHealth / 2)
+			{
+				return laserCount + 12;
+			}
+			return laserCount + 2;
 		}
 
 		if(patchCount == 0)

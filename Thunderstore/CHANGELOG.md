@@ -1,3 +1,10 @@
+## 1.1.7
+* Below 50% hp: increase Trilaser count 5 -> 15
+* Lowered minimum distance from ground to force flight
+* Removed max stun duration
+* Added stun cooldown: 3 seconds
+* Fixed flight bug with freeze
+
 ## 1.1.6
 * Trilaser interrupts when you get close
 * Increased golem scaling a bit again
