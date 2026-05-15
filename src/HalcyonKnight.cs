@@ -26,7 +26,7 @@ public sealed class HalcyonKnight : BaseUnityPlugin
     public const string PluginGUID = PluginAuthor + "." + PluginName;
     public const string PluginAuthor = "Onyx";
     public const string PluginName = "HalcyonKnight";
-    public const string PluginVersion = "1.1.7";
+    public const string PluginVersion = "1.1.8";
 
 	public static HalcyonKnight Instance;
 	public static ConfigEntry<bool> ChangeShrineCredits { get; set; }
@@ -134,8 +134,9 @@ public sealed class HalcyonKnight : BaseUnityPlugin
 		obj = new(RoR2_DLC2.ShrineHalcyonite_prefab);
 		AssetAsyncReferenceManager<GameObject>.LoadAsset(obj).Completed += (x) =>
 		{
-			BossGroup bossGroup = x.Result.EnsureComponent<BossGroup>();
-			x.Result.GetComponent<PurchaseInteraction>().setUnavailableOnTeleporterActivated = true;
+			GameObject shrine = x.Result;
+			BossGroup bossGroup = shrine.EnsureComponent<BossGroup>();
+			shrine.GetComponent<PurchaseInteraction>().setUnavailableOnTeleporterActivated = true;
 		};
 
 		AssetReferenceT<SkillDef> skillDef = new(RoR2_DLC2_Halcyonite.HalcyoniteMonsterWhirlwindRush_asset);
@@ -164,6 +165,27 @@ public sealed class HalcyonKnight : BaseUnityPlugin
 
 		OptionChangeShrineCredits(null, null);
 		ChangeShrineCredits.SettingChanged += OptionChangeShrineCredits;
+
+		On.EntityStates.ShrineHalcyonite.ShrineHalcyoniteNoQuality.OnEnter += (orig, self) =>
+		{
+			orig(self);
+			self.transform.Find("meshHalcyoniteShrineStorm").gameObject.SetActive(true);
+			self.transform.Find("Particle System").gameObject.SetActive(true);
+		};
+
+		On.EntityStates.ShrineHalcyonite.ShrineHalcyoniteMaxQuality.OnEnter += (orig, self) =>
+		{
+			orig(self);
+			self.transform.Find("meshHalcyoniteShrineStorm").gameObject.SetActive(true);
+			self.transform.Find("Particle System").gameObject.SetActive(true);
+		};
+
+		On.RoR2.HalcyoniteShrineInteractable.DestroyDrainVFX += (orig, self) =>
+		{
+			orig(self);
+			self.transform.Find("meshHalcyoniteShrineStorm").gameObject.SetActive(false);
+			self.transform.Find("Particle System").gameObject.SetActive(false);
+		};
 	}
 
 	private void OptionChangeShrineCredits(object sender, EventArgs e)
@@ -329,10 +351,10 @@ public sealed class HalcyonKnight : BaseUnityPlugin
 			body.baseMoveSpeed = 9; // 6.6
 			body.baseNameToken = "Halcyon Knight";
 			body.subtitleNameToken = "Forsaken Heir";
-		}
-		if (body.TryGetComponent<SetStateOnHurt>(out SetStateOnHurt setStateOnHurt))
-		{
-			setStateOnHurt.canBeHitStunned = false;
+			if (body.TryGetComponent<SetStateOnHurt>(out SetStateOnHurt setStateOnHurt))
+			{
+				setStateOnHurt.canBeHitStunned = false;
+			}
 		}
 	}
 

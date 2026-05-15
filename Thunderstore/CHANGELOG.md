@@ -1,3 +1,7 @@
+## 1.1.8
+* Reenabled some of the cut halc shrine vfx
+* Fixed no enemies being hitstunnable lol
+
 ## 1.1.7
 * Below 50% hp: increase Trilaser count 5 -> 15
 * Lowered minimum distance from ground to force flight
