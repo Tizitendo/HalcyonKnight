@@ -26,7 +26,7 @@ public sealed class HalcyonKnight : BaseUnityPlugin
     public const string PluginGUID = PluginAuthor + "." + PluginName;
     public const string PluginAuthor = "Onyx";
     public const string PluginName = "HalcyonKnight";
-    public const string PluginVersion = "1.1.8";
+    public const string PluginVersion = "1.1.9";
 
 	public static HalcyonKnight Instance;
 	public static ConfigEntry<bool> ChangeShrineCredits { get; set; }
@@ -159,7 +159,6 @@ public sealed class HalcyonKnight : BaseUnityPlugin
 		On.EntityStates.Halcyonite.WhirlWindPersuitCycle.UpdateFindTarget += UpdateFindTarget;
 		IL.RoR2.HalcyoniteShrineInteractable.DrainConditionMet += DrainConditionMet;
 		On.RoR2.PurchaseInteraction.OnTeleporterBeginCharging += OnTeleporterBeginCharging;
-		On.EntityStates.ShrineHalcyonite.ShrineHalcyoniteBaseState.OnEnter += ShrineHalcyoniteBaseState_OnEnter;
 		On.RoR2.HalcyoniteShrineInteractable.CalculateCredits += HalcyoniteShrineInteractable_CalculateCredits;
 		On.EntityStates.Halcyonite.TriLaser.FireTriLaser += TriLaser_FireTriLaser;
 
@@ -173,14 +172,14 @@ public sealed class HalcyonKnight : BaseUnityPlugin
 			self.transform.Find("Particle System").gameObject.SetActive(true);
 		};
 
-		On.EntityStates.ShrineHalcyonite.ShrineHalcyoniteMaxQuality.OnEnter += (orig, self) =>
+		On.RoR2.HalcyoniteShrineInteractable.DestroyDrainVFX += (orig, self) =>
 		{
 			orig(self);
-			self.transform.Find("meshHalcyoniteShrineStorm").gameObject.SetActive(true);
-			self.transform.Find("Particle System").gameObject.SetActive(true);
+			self.transform.Find("meshHalcyoniteShrineStorm").gameObject.SetActive(false);
+			self.transform.Find("Particle System").gameObject.SetActive(false);
 		};
 
-		On.RoR2.HalcyoniteShrineInteractable.DestroyDrainVFX += (orig, self) =>
+		On.EntityStates.ShrineHalcyonite.ShrineHalcyoniteFinished.OnEnter += (orig, self) =>
 		{
 			orig(self);
 			self.transform.Find("meshHalcyoniteShrineStorm").gameObject.SetActive(false);
@@ -222,12 +221,6 @@ public sealed class HalcyonKnight : BaseUnityPlugin
 			}
 		}
 		return result;
-	}
-
-	private void ShrineHalcyoniteBaseState_OnEnter(On.EntityStates.ShrineHalcyonite.ShrineHalcyoniteBaseState.orig_OnEnter orig, EntityStates.ShrineHalcyonite.ShrineHalcyoniteBaseState self)
-	{
-		orig(self);
-		Debug.Log(self.outer.state);
 	}
 
 	private void HalcyoniteShrineInteractable_CalculateCredits(On.RoR2.HalcyoniteShrineInteractable.orig_CalculateCredits orig, HalcyoniteShrineInteractable self)

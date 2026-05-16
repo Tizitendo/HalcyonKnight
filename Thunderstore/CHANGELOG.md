@@ -1,3 +1,6 @@
+## 1.1.9
+* Fixed shrine vfx not disappearing after finishing the shrine
+
 ## 1.1.8
 * Reenabled some of the cut halc shrine vfx
 * Fixed no enemies being hitstunnable lol
