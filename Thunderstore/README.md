@@ -20,21 +20,18 @@ Makes the halcyonite fight more dynamic and harder
     * Speed: 30 -> 40
 
 * Poke:
-    * Halcyonite can now move during this attack
     * Minimum distance: 0m
     * Increased vertical hitbox size: 5m -> 6m
-    * Decreased width: 4m -> 2.5m
+    * Decreased width: 4m -> 2m
     * Decreased hitbox length: 13m -> 12m
-    * Knockback: 2000 -> 500
     * Max distance: 20m -> 18m
-    * Attack speed: -30%
+    * Attack speed: -50%
 
-* Slash:
-    * Hitbox height: 1,3m -> 1m can now be jumped over
+* Swipe:
+    * Mostly redone to make sure you can jump over it
+    * Halcyonite can now move during this attack
     * Hitbox length: 14m -> 15m
     * Attack speed: -10%
-    * Halcyonite can now move during this attack
-    * Knockback: 2000 -> 500
     * Max distance: 15m -> 10m
 
 * Laser:

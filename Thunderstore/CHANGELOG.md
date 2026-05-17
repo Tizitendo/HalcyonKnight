@@ -1,3 +1,10 @@
+## 1.2.0
+* Disconnected swipe hitbox from halc (should now only hit if you don't jump)
+* Poke speed: -20%
+* Poke width: 2.5m -> 2m
+* Poke: Halc can no longer move during this attack
+* Trilaser movement speed: -30%
+
 ## 1.1.9
 * Fixed shrine vfx not disappearing after finishing the shrine
 

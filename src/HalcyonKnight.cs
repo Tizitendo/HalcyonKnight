@@ -5,6 +5,7 @@ using HG;
 using Logger;
 using MiscFixes.Modules;
 using Mono.Cecil.Cil;
+using MonoDetour;
 using MonoMod.Cil;
 using RoR2;
 using RoR2.CharacterAI;
@@ -12,6 +13,7 @@ using RoR2.ContentManagement;
 using RoR2.Skills;
 using RoR2BepInExPack.GameAssetPathsBetter;
 using System;
+using System.Reflection;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.Networking;
@@ -38,6 +40,7 @@ public sealed class HalcyonKnight : BaseUnityPlugin
 		Log.Init(Logger);
 		Instance = SingletonHelper.Assign(Instance, this);
 		Options.Init();
+		MonoDetourManager.InvokeHookInitializers(Assembly.GetExecutingAssembly());
 
 		AssetReferenceT<EntityStateConfiguration> stateConfig = new(RoR2_DLC2_Halcyonite.EntityStates_HalcyoniteMonster_ChargeTriLaser_asset);
 		AssetAsyncReferenceManager<EntityStateConfiguration>.LoadAsset(stateConfig).Completed += (x) =>
@@ -68,15 +71,13 @@ public sealed class HalcyonKnight : BaseUnityPlugin
 		stateConfig = new(RoR2_DLC2_Halcyonite.EntityStates_HalcyoniteMonster_GoldenSwipe_asset);
 		AssetAsyncReferenceManager<EntityStateConfiguration>.LoadAsset(stateConfig).Completed += (x) =>
 		{
-			x.Result.TryModifyFieldValue<float>("baseDuration", 1.3f); // 1
+			x.Result.TryModifyFieldValue<float>("baseDuration", 1.5f); // 1
 			//x.Result.TryModifyFieldValue<float>("damageCoefficient", 1.2f); // 1.5
-			x.Result.TryModifyFieldValue<float>("pushAwayForce", 500f); // 2000
 		};
 
 		stateConfig = new(RoR2_DLC2_Halcyonite.EntityStates_HalcyoniteMonster_GoldenSlash_asset);
 		AssetAsyncReferenceManager<EntityStateConfiguration>.LoadAsset(stateConfig).Completed += (x) =>
 		{
-			x.Result.TryModifyFieldValue<float>("pushAwayForce", 500f); // 2000
 			x.Result.TryModifyFieldValue<float>("baseDuration", 1.1f); // 1
 		};
 
@@ -90,8 +91,8 @@ public sealed class HalcyonKnight : BaseUnityPlugin
 				{
 					case "Golden Swipe":
 						skillDriver.minDistance = 0f;
-						skillDriver.movementType = AISkillDriver.MovementType.FleeMoveTarget;
-						skillDriver.moveInputScale = 0.5f;
+						skillDriver.movementType = AISkillDriver.MovementType.Stop;
+						//skillDriver.moveInputScale = 0.3f;
 						skillDriver.maxDistance = 15f;
 						skillDriver.driverUpdateTimerOverride = 1.5f;
 						skillDriver.aimVectorMaxSpeedOverride = 0f;
@@ -104,7 +105,7 @@ public sealed class HalcyonKnight : BaseUnityPlugin
 						break;
 					case "TriLaser":
 						skillDriver.minDistance = 15f;
-						//skillDriver.moveInputScale = 0.7f;
+						skillDriver.moveInputScale = 0.7f;
 						skillDriver.driverUpdateTimerOverride = 2.5f;
 						skillDriver.movementType = AISkillDriver.MovementType.ChaseMoveTarget;
 						break;
@@ -113,6 +114,7 @@ public sealed class HalcyonKnight : BaseUnityPlugin
 						break;
 					case "Follow Target":
 						skillDriver.minDistance = 5;
+						skillDriver.driverUpdateTimerOverride = 0.5f;
 						break;
 					case "Follow Nodegraph":
 						skillDriver.minDistance = 5;
@@ -339,8 +341,8 @@ public sealed class HalcyonKnight : BaseUnityPlugin
 		orig(self, body);
 		if (body.name == "HalcyoniteBody(Clone)")
 		{
-			body.modelLocator.modelTransform.GetChild(4).localScale = new Vector3(2.5f, 6f, 12f); //poke
-			body.modelLocator.modelTransform.GetChild(7).localScale = new Vector3(15f, 0.8f, 10f); //swipe
+			body.modelLocator.modelTransform.GetChild(4).localScale = new Vector3(2f, 6f, 12f); //poke
+			body.modelLocator.modelTransform.GetChild(7).localScale = new Vector3(15f, 0.5f, 10f); //swipe
 			body.baseMoveSpeed = 9; // 6.6
 			body.baseNameToken = "Halcyon Knight";
 			body.subtitleNameToken = "Forsaken Heir";
