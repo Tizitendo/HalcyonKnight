@@ -5,23 +5,24 @@ using HG;
 using Logger;
 using MiscFixes.Modules;
 using Mono.Cecil.Cil;
-using MonoDetour;
 using MonoMod.Cil;
+using R2API;
 using RoR2;
 using RoR2.CharacterAI;
 using RoR2.ContentManagement;
 using RoR2.Skills;
 using RoR2BepInExPack.GameAssetPathsBetter;
 using System;
+using System.IO;
 using System.Reflection;
 using UnityEngine;
-using UnityEngine.AddressableAssets;
-using UnityEngine.Networking;
 
 [assembly: HG.Reflection.SearchableAttribute.OptIn]
 
 namespace HalcyonKnight;
 
+[BepInDependency(HalcyonFixes.HalcyonFixes.PluginGUID, BepInDependency.DependencyFlags.HardDependency)]
+[BepInDependency(RiskOfOptions.PluginInfo.PLUGIN_GUID, BepInDependency.DependencyFlags.SoftDependency)]
 [BepInPlugin(PluginGUID, PluginName, PluginVersion)]
 public sealed class HalcyonKnight : BaseUnityPlugin
 {
@@ -33,56 +34,46 @@ public sealed class HalcyonKnight : BaseUnityPlugin
 	public static HalcyonKnight Instance;
 	public static ConfigEntry<bool> ChangeShrineCredits { get; set; }
 
-	static SpawnCard halcshrineCard;
-
 	public void Awake()
     {
 		Log.Init(Logger);
 		Instance = SingletonHelper.Assign(Instance, this);
 		Options.Init();
-		MonoDetourManager.InvokeHookInitializers(Assembly.GetExecutingAssembly());
 
-		AssetReferenceT<EntityStateConfiguration> stateConfig = new(RoR2_DLC2_Halcyonite.EntityStates_HalcyoniteMonster_ChargeTriLaser_asset);
-		AssetAsyncReferenceManager<EntityStateConfiguration>.LoadAsset(stateConfig).Completed += (x) =>
+		AssetAsyncReferenceManager<EntityStateConfiguration>.LoadAsset(new(RoR2_DLC2_Halcyonite.EntityStates_HalcyoniteMonster_ChargeTriLaser_asset)).Completed += (x) =>
 		{
 			x.Result.TryModifyFieldValue<float>("baseDuration", 1.5f);
 		};
 
-		stateConfig = new(RoR2_DLC2_Halcyonite.EntityStates_HalcyoniteMonster_TriLaser_asset);
-		AssetAsyncReferenceManager<EntityStateConfiguration>.LoadAsset(stateConfig).Completed += (x) =>
+		AssetAsyncReferenceManager<EntityStateConfiguration>.LoadAsset(new(RoR2_DLC2_Halcyonite.EntityStates_HalcyoniteMonster_TriLaser_asset)).Completed += (x) =>
 		{
 			x.Result.TryModifyFieldValue<float>("blastRadius", 2f); // 4
 		};
 
-		stateConfig = new(RoR2_DLC2_Halcyonite.EntityStates_HalcyoniteMonster_WhirlwindWarmUp_asset);
-		AssetAsyncReferenceManager<EntityStateConfiguration>.LoadAsset(stateConfig).Completed += (x) =>
+		AssetAsyncReferenceManager<EntityStateConfiguration>.LoadAsset(new(RoR2_DLC2_Halcyonite.EntityStates_HalcyoniteMonster_WhirlwindWarmUp_asset)).Completed += (x) =>
 		{
 			x.Result.TryModifyFieldValue<float>("duration", 0.7f); // 0.5
 		};
 
-		stateConfig = new(RoR2_DLC2_Halcyonite.EntityStates_HalcyoniteMonster_WhirlwindPersuitCycle_asset);
-		AssetAsyncReferenceManager<EntityStateConfiguration>.LoadAsset(stateConfig).Completed += (x) =>
+		AssetAsyncReferenceManager<EntityStateConfiguration>.LoadAsset(new(RoR2_DLC2_Halcyonite.EntityStates_HalcyoniteMonster_WhirlwindPersuitCycle_asset)).Completed += (x) =>
 		{
 			x.Result.TryModifyFieldValue<float>("dashSpeedCoefficient", 40f); // 20
 			x.Result.TryModifyFieldValue<float>("decelerateDuration", 0.5f); // 1
 			x.Result.TryModifyFieldValue<float>("dashSafeExitDuration", 3f); // 5
 		};
 
-		stateConfig = new(RoR2_DLC2_Halcyonite.EntityStates_HalcyoniteMonster_GoldenSwipe_asset);
-		AssetAsyncReferenceManager<EntityStateConfiguration>.LoadAsset(stateConfig).Completed += (x) =>
+		AssetAsyncReferenceManager<EntityStateConfiguration>.LoadAsset(new(RoR2_DLC2_Halcyonite.EntityStates_HalcyoniteMonster_GoldenSwipe_asset)).Completed += (x) =>
 		{
 			x.Result.TryModifyFieldValue<float>("baseDuration", 1.5f); // 1
 			//x.Result.TryModifyFieldValue<float>("damageCoefficient", 1.2f); // 1.5
 		};
 
-		stateConfig = new(RoR2_DLC2_Halcyonite.EntityStates_HalcyoniteMonster_GoldenSlash_asset);
-		AssetAsyncReferenceManager<EntityStateConfiguration>.LoadAsset(stateConfig).Completed += (x) =>
+		AssetAsyncReferenceManager<EntityStateConfiguration>.LoadAsset(new(RoR2_DLC2_Halcyonite.EntityStates_HalcyoniteMonster_GoldenSlash_asset)).Completed += (x) =>
 		{
 			x.Result.TryModifyFieldValue<float>("baseDuration", 1.1f); // 1
 		};
 
-		AssetReferenceT<GameObject> obj = new(RoR2_DLC2_Halcyonite.HalcyoniteMaster_prefab);
-		AssetAsyncReferenceManager<GameObject>.LoadAsset(obj).Completed += (x) =>
+		AssetAsyncReferenceManager<GameObject>.LoadAsset(new(RoR2_DLC2_Halcyonite.HalcyoniteMaster_prefab)).Completed += (x) =>
 		{
 			GameObject master = x.Result;
 			foreach (AISkillDriver skillDriver in master.GetComponents<AISkillDriver>())
@@ -133,181 +124,65 @@ public sealed class HalcyonKnight : BaseUnityPlugin
 			}
 		};
 
-		obj = new(RoR2_DLC2.ShrineHalcyonite_prefab);
-		AssetAsyncReferenceManager<GameObject>.LoadAsset(obj).Completed += (x) =>
+		AssetAsyncReferenceManager<GameObject>.LoadAsset(new(RoR2_DLC2.ShrineHalcyonite_prefab)).Completed += (x) =>
 		{
 			GameObject shrine = x.Result;
 			BossGroup bossGroup = shrine.EnsureComponent<BossGroup>();
 			shrine.GetComponent<PurchaseInteraction>().setUnavailableOnTeleporterActivated = true;
 		};
 
-		AssetReferenceT<SkillDef> skillDef = new(RoR2_DLC2_Halcyonite.HalcyoniteMonsterWhirlwindRush_asset);
-		AssetAsyncReferenceManager<SkillDef>.LoadAsset(skillDef).Completed += (x) =>
+		AssetAsyncReferenceManager<SkillDef>.LoadAsset(new(RoR2_DLC2_Halcyonite.HalcyoniteMonsterWhirlwindRush_asset)).Completed += (x) =>
 		{
 			SkillDef swipeSkill = x.Result;
 			swipeSkill.baseRechargeInterval = 15;
 		};
 
-		skillDef = new(RoR2_DLC2_Halcyonite.HalcyoniteMonsterGoldenSlash_asset);
-		AssetAsyncReferenceManager<SkillDef>.LoadAsset(skillDef).Completed += (x) =>
+		AssetAsyncReferenceManager<SkillDef>.LoadAsset(new(RoR2_DLC2_Halcyonite.HalcyoniteMonsterGoldenSlash_asset)).Completed += (x) =>
 		{
 			SkillDef swipeSkill = x.Result;
 			swipeSkill.baseRechargeInterval = 7;
 		};
 
-		IL.EntityStates.Halcyonite.TriLaser.FixedUpdate += TriLaser_FixedUpdate;
-		On.EntityStates.Halcyonite.TriLaser.OnEnter += TriLaser_OnEnter;
-		On.RoR2.CharacterMaster.OnBodyStart += OnBodyStart;
-		On.EntityStates.Halcyonite.WhirlWindPersuitCycle.UpdateFindTarget += UpdateFindTarget;
-		IL.RoR2.HalcyoniteShrineInteractable.DrainConditionMet += DrainConditionMet;
-		On.RoR2.PurchaseInteraction.OnTeleporterBeginCharging += OnTeleporterBeginCharging;
-		On.RoR2.HalcyoniteShrineInteractable.CalculateCredits += HalcyoniteShrineInteractable_CalculateCredits;
-		On.EntityStates.Halcyonite.TriLaser.FireTriLaser += TriLaser_FireTriLaser;
-
-		OptionChangeShrineCredits(null, null);
-		ChangeShrineCredits.SettingChanged += OptionChangeShrineCredits;
-
-		On.EntityStates.ShrineHalcyonite.ShrineHalcyoniteNoQuality.OnEnter += (orig, self) =>
+		AssetAsyncReferenceManager<GameObject>.LoadAsset(new(RoR2_DLC2_Halcyonite.HalcyoniteBody_prefab)).Completed += (x) =>
 		{
-			orig(self);
-			self.transform.Find("meshHalcyoniteShrineStorm").gameObject.SetActive(true);
-			self.transform.Find("Particle System").gameObject.SetActive(true);
-		};
-
-		On.RoR2.HalcyoniteShrineInteractable.DestroyDrainVFX += (orig, self) =>
-		{
-			orig(self);
-			self.transform.Find("meshHalcyoniteShrineStorm").gameObject.SetActive(false);
-			self.transform.Find("Particle System").gameObject.SetActive(false);
-		};
-
-		On.EntityStates.ShrineHalcyonite.ShrineHalcyoniteFinished.OnEnter += (orig, self) =>
-		{
-			orig(self);
-			self.transform.Find("meshHalcyoniteShrineStorm").gameObject.SetActive(false);
-			self.transform.Find("Particle System").gameObject.SetActive(false);
-		};
-	}
-
-	private void OptionChangeShrineCredits(object sender, EventArgs e)
-	{
-		if (ChangeShrineCredits.Value)
-		{
-			On.RoR2.SceneDirector.GenerateInteractableCardSelection += GenerateInteractableCardSelection;
-			AssetReferenceT<SpawnCard> interactableCard = new(RoR2_DLC2.iscShrineHalcyoniteTier1_asset);
-			AssetAsyncReferenceManager<SpawnCard>.LoadAsset(interactableCard).Completed += (x) =>
+			if (x.Result.TryGetComponent(out CharacterBody body))
 			{
-				x.Result.directorCreditCost = 30;
-				halcshrineCard = x.Result;
-			};
-		} else {
-			On.RoR2.SceneDirector.GenerateInteractableCardSelection -= GenerateInteractableCardSelection;
-			AssetReferenceT<SpawnCard> interactableCard = new(RoR2_DLC2.iscShrineHalcyoniteTier1_asset);
-			AssetAsyncReferenceManager<SpawnCard>.LoadAsset(interactableCard).Completed += (x) =>
-			{
-				x.Result.directorCreditCost = 0;
-				halcshrineCard = x.Result;
-			};
-		}
-	}
-
-	private WeightedSelection<DirectorCard> GenerateInteractableCardSelection(On.RoR2.SceneDirector.orig_GenerateInteractableCardSelection orig, SceneDirector self)
-	{
-		WeightedSelection<DirectorCard> result = orig(self);
-		for(int i = 0; i < result.Count; i++)
-		{
-			WeightedSelection<DirectorCard>.ChoiceInfo choice = result.GetChoice(i);
-			if(choice.value.spawnCard == halcshrineCard)
-			{
-				result.ModifyChoiceWeight(i, choice.weight * 2);
+				body.baseMoveSpeed = 9; // 6.6
+				// body.baseNameToken = "Halcyon Knight";
+				body.subtitleNameToken = "HALCYONITE_BODY_SUBTITLE";
+				// body.subtitleNameToken = "Forsaken Heir";
 			}
-		}
-		return result;
-	}
-
-	private void HalcyoniteShrineInteractable_CalculateCredits(On.RoR2.HalcyoniteShrineInteractable.orig_CalculateCredits orig, HalcyoniteShrineInteractable self)
-	{
-		orig(self);
-		if (self.scaleMonsterCreditWithDifficultyCoefficient)
-		{
-			self.monsterCredit /= Math.Max(Run.instance.difficultyCoefficient * 0.3f, 1);
-		}
-	}
-
-	private void OnTeleporterBeginCharging(On.RoR2.PurchaseInteraction.orig_OnTeleporterBeginCharging orig, TeleporterInteraction self)
-	{
-		orig(self);
-		if (!NetworkServer.active)
-		{
-			return;
-		}
-		foreach (PurchaseInteraction instances in InstanceTracker.GetInstancesList<PurchaseInteraction>())
-		{
-			if (instances.name == "ShrineHalcyonite(Clone)")
+			if (x.Result.TryGetComponent(out ModelLocator modelLocator) && modelLocator.modelTransform)
 			{
-				if (instances.TryGetComponent(out ChildLocator childLocator))
+				Transform pokeHitbox = modelLocator.modelTransform.Find("HitboxGoldenSword");
+				if (pokeHitbox)
 				{
-					Transform child;
-					if (childLocator.TryFindChild("GoldSiphonNearbyBodyAttachment", out child))
-					{
-						child.gameObject.SetActive(false);
-					}
-					if (childLocator.TryFindChild("StormPortalIndicator", out child))
-					{
-						child.gameObject.SetActive(false);
-					}
-					if (childLocator.TryFindChild("RangeIndicator", out child))
-					{
-						child.gameObject.SetActive(false);
-					}
-					if (childLocator.TryFindChild("GoldshoresPortalIndicator", out child))
-					{
-						child.gameObject.SetActive(false);
-					}
+					pokeHitbox.localScale = new Vector3(2f, 6f, 12f);
+				}
+				Transform swipeHitbox = modelLocator.modelTransform.Find("HitboxGoldenSlash");
+				if (swipeHitbox)
+				{
+					swipeHitbox.localScale = new Vector3(15f, 0.5f, 10f);
 				}
 			}
-		}
-	}
+			if (x.Result.TryGetComponent(out SetStateOnHurt setStateOnHurt))
+			{
+				setStateOnHurt.canBeHitStunned = false;
+			}
+		};
 
-	private void DrainConditionMet(ILContext il)
-	{
-		ILCursor c = new ILCursor(il);
-
-		if (c.TryGotoNext(
-				x => x.MatchLdfld(typeof(HalcyoniteShrineInteractable), nameof(HalcyoniteShrineInteractable.goldDrained)),
-				x => x.MatchConvR4(),
-				x => x.MatchLdcR4(out _),
-				x => x.MatchDiv()
-			) &&
-			c.TryGotoNext(MoveType.Before,
-				x => x.MatchStloc(out _)
-			))
+		string path = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "lang", "Halc.language");
+		if (File.Exists(path))
 		{
-			c.Emit(OpCodes.Pop);
-			c.Emit(OpCodes.Ldarg_0);
-			c.EmitDelegate<Func<HalcyoniteShrineInteractable, int>>(AdjustHalcScaling);
-		}
-		else
-		{
-			Log.Error(il.Method.Name + " IL Hook failed!");
+			LanguageAPI.AddOverlayPath(path);
+		} else {
+			Log.Error("Failed to find path: " + path);
 		}
 
-		static int AdjustHalcScaling(HalcyoniteShrineInteractable self)
-		{
-			if (self.goldDrained > self.lowGoldCost && self.goldDrained < self.midGoldCost)
-			{
-				return (int)(0.7 + 0.06 * Run.instance.ambientLevel);
-			}
-			if (self.goldDrained > self.midGoldCost && self.goldDrained < self.maxGoldCost)
-			{
-				return (int)(1.4 + 0.12 * Run.instance.ambientLevel);
-			}
-			if (self.goldDrained >= self.maxGoldCost)
-			{
-				return (int)(2.1 + 0.18 * Run.instance.ambientLevel);
-			}
-			return 0;
-		}
+		IL.EntityStates.Halcyonite.TriLaser.FixedUpdate += TriLaser_FixedUpdate;
+		On.EntityStates.Halcyonite.TriLaser.OnEnter += TriLaser_OnEnter;
+		On.EntityStates.Halcyonite.WhirlWindPersuitCycle.UpdateFindTarget += UpdateFindTarget;
+		On.EntityStates.Halcyonite.TriLaser.FireTriLaser += TriLaser_FireTriLaser;
 	}
 
 	static void UpdateFindTarget(On.EntityStates.Halcyonite.WhirlWindPersuitCycle.orig_UpdateFindTarget orig, EntityStates.Halcyonite.WhirlWindPersuitCycle self)
@@ -333,23 +208,6 @@ public sealed class HalcyonKnight : BaseUnityPlugin
 		Physics.Raycast(new Ray(self.transform.position, Vector3.down), out _, 50f, LayerIndex.world.mask, QueryTriggerInteraction.Ignore))
 		{
 			self.outer.SetNextStateToMain();
-		}
-	}
-
-	static void OnBodyStart(On.RoR2.CharacterMaster.orig_OnBodyStart orig, CharacterMaster self, CharacterBody body)
-	{
-		orig(self, body);
-		if (body.name == "HalcyoniteBody(Clone)")
-		{
-			body.modelLocator.modelTransform.GetChild(4).localScale = new Vector3(2f, 6f, 12f); //poke
-			body.modelLocator.modelTransform.GetChild(7).localScale = new Vector3(15f, 0.5f, 10f); //swipe
-			body.baseMoveSpeed = 9; // 6.6
-			body.baseNameToken = "Halcyon Knight";
-			body.subtitleNameToken = "Forsaken Heir";
-			if (body.TryGetComponent<SetStateOnHurt>(out SetStateOnHurt setStateOnHurt))
-			{
-				setStateOnHurt.canBeHitStunned = false;
-			}
 		}
 	}
 

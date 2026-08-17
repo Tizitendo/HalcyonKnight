@@ -1,10 +1,9 @@
 using MonoDetour;
 using MonoDetour.HookGen;
-using Logger;
 using RoR2;
 using UnityEngine;
 using RoR2.CharacterAI;
-using System;
+using Logger;
 
 namespace HalcyonKnight;
 
@@ -12,7 +11,7 @@ namespace HalcyonKnight;
 public class LibraryClassHooks
 {
 	[MonoDetourHookInitialize]
-	static void Init()
+	static void HalcyonFixesHooks()
 	{
 		Md.HalcyonFixes.FixedSlash.OnEnter.Postfix((self) =>
 		{

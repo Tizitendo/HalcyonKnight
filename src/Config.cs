@@ -10,7 +10,6 @@ using UnityEngine;
 
 namespace HalcyonKnight;
 
-[BepInDependency(RiskOfOptions.PluginInfo.PLUGIN_GUID, BepInDependency.DependencyFlags.SoftDependency)]
 static class Options
 {
 	public static bool IsEnabled => Chainloader.PluginInfos.ContainsKey(RiskOfOptions.PluginInfo.PLUGIN_GUID);
