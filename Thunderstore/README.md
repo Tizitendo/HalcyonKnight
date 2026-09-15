@@ -3,20 +3,24 @@
 Makes the halcyonite fight more dynamic and harder
 
 * General:
-    * Shrine can't be activated after tp
-    * Stun cooldown: 3s
+    * Stun cooldown: 5s
+    * Freeze cooldown 5s
     * Can no longer be hitstunned
-    * Halcyonites spawned from shrines count as bosses
     * Enters whirlwind over the edge
     * Movement speed: 6.6 -> 9
     * Prioritizes players
-    * Added option to increase stage shrine 1 credit cost 0 -> 30. for reference stage 2+ is 50. (default: disabled)
+    * Passively spawns golems if spawned after beating the TP event
     * Way more tiny changes 
+
+* Shrine:
+    * Halcyonites spawned from shrines count as bosses
+    * Added option to increase stage shrine 1 credit cost 0 -> 30. for reference stage 2+ is 50. (default: disabled)
+    * Spawns golems if player without money stands in the zone
+    * Doubled charging speed
 
 * Whirlwind:
     * Increased speed by 50%
     * Increased cooldown: 10s -> 15s
-    * Immune to stun
     * Speed: 30 -> 40
 
 * Poke:

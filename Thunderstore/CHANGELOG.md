@@ -1,3 +1,16 @@
+## 1.2.1
+* Doubled shrine charging speed
+* Standing in the zone without any money now spawns golems
+* Halcs spawned from shrines no longer drop any money
+* Shrines can now be activated after tp again
+* Halc now passively spawns golems when fought after tp
+* Increased stun cooldown to 5 seconds
+* Added freeze cooldown of 5 seconds
+* Halc can now be stunned during his whirlwind
+* Fixed halc shrine charge visual not completing
+* Improved shrine golem spawning a bit
+* removed tri laser blast radius completely
+
 ## 1.2.0
 * Disconnected swipe hitbox from halc (should now only hit if you don't jump)
 * Poke speed: -20%

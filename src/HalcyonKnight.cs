@@ -1,7 +1,6 @@
 using BepInEx;
 using BepInEx.Configuration;
 using EntityStates.Halcyonite;
-using HG;
 using Logger;
 using MiscFixes.Modules;
 using Mono.Cecil.Cil;
@@ -47,7 +46,7 @@ public sealed class HalcyonKnight : BaseUnityPlugin
 
 		AssetAsyncReferenceManager<EntityStateConfiguration>.LoadAsset(new(RoR2_DLC2_Halcyonite.EntityStates_HalcyoniteMonster_TriLaser_asset)).Completed += (x) =>
 		{
-			x.Result.TryModifyFieldValue<float>("blastRadius", 2f); // 4
+			x.Result.TryModifyFieldValue<float>("blastRadius", 0f); // 4
 		};
 
 		AssetAsyncReferenceManager<EntityStateConfiguration>.LoadAsset(new(RoR2_DLC2_Halcyonite.EntityStates_HalcyoniteMonster_WhirlwindWarmUp_asset)).Completed += (x) =>
@@ -118,17 +117,24 @@ public sealed class HalcyonKnight : BaseUnityPlugin
 			maintainDistance.maxDistance = float.MaxValue;
 			maintainDistance.movementType = AISkillDriver.MovementType.FleeMoveTarget;
 
-			if (master.TryGetComponent<BaseAI>(out BaseAI baseAI))
+			if (master.TryGetComponent(out BaseAI baseAI))
 			{
 				baseAI.prioritizePlayers = true;
 			}
-		};
 
-		AssetAsyncReferenceManager<GameObject>.LoadAsset(new(RoR2_DLC2.ShrineHalcyonite_prefab)).Completed += (x) =>
-		{
-			GameObject shrine = x.Result;
-			BossGroup bossGroup = shrine.EnsureComponent<BossGroup>();
-			shrine.GetComponent<PurchaseInteraction>().setUnavailableOnTeleporterActivated = true;
+			CombatDirector afterTPDirector = master.AddComponent<CombatDirector>();
+			afterTPDirector.enabled = false;
+			afterTPDirector.goldRewardCoefficient = 0;
+            afterTPDirector.moneyWaveIntervals = [new RangeFloat{min=1,max=1}];
+			afterTPDirector.monsterCredit = 150;
+			afterTPDirector.creditMultiplier = 2;
+			HalcAfterTPController afterTPController = master.AddComponent<HalcAfterTPController>();
+			afterTPController.combatDirector = afterTPDirector;
+
+			AssetAsyncReferenceManager<DirectorCardCategorySelection>.LoadAsset(new(RoR2_DLC2.dccsShrineHalcyoniteActivationMonsterWave_asset)).Completed += (x) =>
+			{
+				afterTPDirector.monsterCards = x.Result;
+			};
 		};
 
 		AssetAsyncReferenceManager<SkillDef>.LoadAsset(new(RoR2_DLC2_Halcyonite.HalcyoniteMonsterWhirlwindRush_asset)).Completed += (x) =>
@@ -148,9 +154,7 @@ public sealed class HalcyonKnight : BaseUnityPlugin
 			if (x.Result.TryGetComponent(out CharacterBody body))
 			{
 				body.baseMoveSpeed = 9; // 6.6
-				// body.baseNameToken = "Halcyon Knight";
 				body.subtitleNameToken = "HALCYONITE_BODY_SUBTITLE";
-				// body.subtitleNameToken = "Forsaken Heir";
 			}
 			if (x.Result.TryGetComponent(out ModelLocator modelLocator) && modelLocator.modelTransform)
 			{
@@ -265,6 +269,22 @@ public sealed class HalcyonKnight : BaseUnityPlugin
 				}
 				break;
 			}
+		}
+	}
+}
+
+public class HalcAfterTPController : MonoBehaviour
+{
+	public CombatDirector combatDirector;
+	void Start()
+	{
+		TeleporterInteraction teleporter = TeleporterInteraction.instance;
+		if (!teleporter || !teleporter.isCharged)
+			return;
+		if (combatDirector)
+		{
+			// combatDirector.monsterCredit *= Run.instance.compensatedDifficultyCoefficient;
+			combatDirector.enabled = true;
 		}
 	}
 }

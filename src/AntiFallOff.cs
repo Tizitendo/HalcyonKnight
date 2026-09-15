@@ -1,3 +1,4 @@
+using System;
 using EntityStates;
 using EntityStates.Halcyonite;
 using HG;
@@ -20,14 +21,10 @@ static class AntiFallOff
 			x.Result.EnsureComponent<ExtraChanges>();
 		};
 
-		On.EntityStates.Halcyonite.WhirlWindPersuitCycle.OnEnter += WhirlWindPersuitCycle_OnEnter;
-		On.EntityStates.Halcyonite.WhirlWindPersuitCycle.OnExit += WhirlWindPersuitCycle_OnExit;
-		On.EntityStates.Halcyonite.WhirlwindWarmUp.OnEnter += WhirlWindPersuitCycle_OnEnter;
-		On.EntityStates.Halcyonite.WhirlwindWarmUp.OnExit += WhirlWindPersuitCycle_OnExit;
 		On.EntityStates.Halcyonite.WhirlWindPersuitCycle.UpdateLand += WhirlWindPersuitCycle_UpdateLand;
 	}
 
-	static void WhirlWindPersuitCycle_UpdateLand(On.EntityStates.Halcyonite.WhirlWindPersuitCycle.orig_UpdateLand orig, EntityStates.Halcyonite.WhirlWindPersuitCycle self)
+    static void WhirlWindPersuitCycle_UpdateLand(On.EntityStates.Halcyonite.WhirlWindPersuitCycle.orig_UpdateLand orig, EntityStates.Halcyonite.WhirlWindPersuitCycle self)
 	{
 		orig(self);
 		if (!Physics.Raycast(new Ray(self.transform.position, Vector3.down), out _, 50f, LayerIndex.world.mask, QueryTriggerInteraction.Ignore))
@@ -36,37 +33,24 @@ static class AntiFallOff
 		}
 	}
 
-	static void WhirlWindPersuitCycle_OnExit(On.EntityStates.Halcyonite.WhirlwindWarmUp.orig_OnExit orig, EntityStates.Halcyonite.WhirlwindWarmUp self)
+	public static void SetStunnable(EntityState self, bool stunnable)
 	{
-		orig(self);
-		SetStunnable(self, true);
-	}
-
-	static void WhirlWindPersuitCycle_OnEnter(On.EntityStates.Halcyonite.WhirlwindWarmUp.orig_OnEnter orig, EntityStates.Halcyonite.WhirlwindWarmUp self)
-	{
-		orig(self);
-		SetStunnable(self, false);
-	}
-
-	static void WhirlWindPersuitCycle_OnExit(On.EntityStates.Halcyonite.WhirlWindPersuitCycle.orig_OnExit orig, EntityStates.Halcyonite.WhirlWindPersuitCycle self)
-	{
-		orig(self);
-		SetStunnable(self, true);
-	}
-
-	static void WhirlWindPersuitCycle_OnEnter(On.EntityStates.Halcyonite.WhirlWindPersuitCycle.orig_OnEnter orig, EntityStates.Halcyonite.WhirlWindPersuitCycle self)
-	{
-		orig(self);
-		SetStunnable(self, false);
-	}
-
-	static void SetStunnable(EntityState self, bool stunnable)
-	{
-		if (self.TryGetComponent<SetStateOnHurt>(out SetStateOnHurt setStateOnHurt))
+		if (self.TryGetComponent(out SetStateOnHurt setStateOnHurt))
 		{
 			if (self.TryGetComponent(out ExtraChanges extraChanges) && extraChanges.stunCooldown <= 0)
 			{
 				setStateOnHurt.canBeStunned = stunnable;
+			}
+		}
+	}
+
+	public static void SetFreezable(EntityState self, bool freezeable)
+	{
+		if (self.TryGetComponent(out SetStateOnHurt setStateOnHurt))
+		{
+			if (self.TryGetComponent(out ExtraChanges extraChanges) && extraChanges.freezeCooldown <= 0)
+			{
+				setStateOnHurt.canBeFrozen = freezeable;
 			}
 		}
 	}
@@ -77,9 +61,12 @@ public class ExtraChanges : MonoBehaviour
 	EntityStateMachine _weaponStateMachine;
 	EntityStateMachine _bodyStateMachine;
 	bool _wasStunned;
+	bool _wasFrozen;
 	public float stunCooldown;
+	public float freezeCooldown;
 
-	public const float maxStunCooldown = 3f;
+	public const float maxStunCooldown = 5f;
+	public const float maxFreezeCooldown = 5f;
 
 	void Awake()
 	{
@@ -100,15 +87,16 @@ public class ExtraChanges : MonoBehaviour
 	{
 		if (!_weaponStateMachine)
 			return;
+		bool raycastHit = Physics.Raycast(new Ray(transform.position, Vector3.down), out _, 50f, LayerIndex.world.mask, QueryTriggerInteraction.Ignore);
+
 		if (_weaponStateMachine.state is not WhirlwindWarmUp &&
 		_weaponStateMachine.state is not WhirlWindPersuitCycle &&
 		_weaponStateMachine.nextState is not WhirlwindWarmUp &&
 		_weaponStateMachine.nextState is not WhirlWindPersuitCycle)
 		{
-			if (!Physics.Raycast(new Ray(transform.position, Vector3.down), out _, 50f, LayerIndex.world.mask, QueryTriggerInteraction.Ignore) &&
-			_bodyStateMachine.CanInterruptState(InterruptPriority.Immobilize))
+			if (!raycastHit && _bodyStateMachine.CanInterruptState(InterruptPriority.Immobilize))
 			{
-				_weaponStateMachine.SetInterruptState(new EntityStates.Halcyonite.WhirlwindWarmUp(), InterruptPriority.Immobilize);
+				_weaponStateMachine.SetInterruptState(new WhirlwindWarmUp(), InterruptPriority.Immobilize);
 			}
 		}
 
@@ -118,7 +106,8 @@ public class ExtraChanges : MonoBehaviour
 		} else {
 			if (_wasStunned) {
 				stunCooldown = maxStunCooldown;
-				if (TryGetComponent<SetStateOnHurt>(out SetStateOnHurt setStateOnHurt))
+				Util.PlaySound("Stop_halcyonite_skill3_loop", gameObject);
+				if (TryGetComponent(out SetStateOnHurt setStateOnHurt))
 				{
 					setStateOnHurt.canBeStunned = false;
 				}
@@ -126,19 +115,36 @@ public class ExtraChanges : MonoBehaviour
 			_wasStunned = false;
 		}
 
-		if (_weaponStateMachine.state is not WhirlwindWarmUp &&
-		_weaponStateMachine.state is not WhirlWindPersuitCycle &&
-		_weaponStateMachine.nextState is not WhirlwindWarmUp &&
-		_weaponStateMachine.nextState is not WhirlWindPersuitCycle)
+		if (_bodyStateMachine.state is FrozenState)
 		{
-			if(stunCooldown > 0 && stunCooldown - Time.fixedDeltaTime <= 0)
+			_wasFrozen = true;
+		} else {
+			if (_wasFrozen) {
+				freezeCooldown = maxFreezeCooldown;
+				Util.PlaySound("Stop_halcyonite_skill3_loop", gameObject);
+				if (TryGetComponent(out SetStateOnHurt setStateOnHurt))
+				{
+					setStateOnHurt.canBeFrozen = false;
+				}
+			}
+			_wasFrozen = false;
+		}
+
+		if (raycastHit)
+		{
+			if (TryGetComponent(out SetStateOnHurt setStateOnHurt))
 			{
-				if (TryGetComponent<SetStateOnHurt>(out SetStateOnHurt setStateOnHurt))
+				if(stunCooldown > 0 && stunCooldown - Time.fixedDeltaTime <= 0)
 				{
 					setStateOnHurt.canBeStunned = true;
 				}
+				stunCooldown -= Time.fixedDeltaTime;
+				if(freezeCooldown > 0 && freezeCooldown - Time.fixedDeltaTime <= 0)
+				{
+					setStateOnHurt.canBeFrozen = true;
+				}
+				freezeCooldown -= Time.fixedDeltaTime;
 			}
-			stunCooldown -= Time.fixedDeltaTime;
 		}
 	}
 }
