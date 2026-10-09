@@ -1,20 +1,21 @@
 using BepInEx;
 using BepInEx.Configuration;
+using RoR2;
+using RoR2.ContentManagement;
 using EntityStates.Halcyonite;
 using Logger;
 using MiscFixes.Modules;
 using Mono.Cecil.Cil;
 using MonoMod.Cil;
 using R2API;
-using RoR2;
 using RoR2.CharacterAI;
-using RoR2.ContentManagement;
 using RoR2.Skills;
 using RoR2BepInExPack.GameAssetPathsBetter;
 using System;
 using System.IO;
 using System.Reflection;
 using UnityEngine;
+using UnityEngine.AddressableAssets;
 
 [assembly: HG.Reflection.SearchableAttribute.OptIn]
 
@@ -28,51 +29,52 @@ public sealed class HalcyonKnight : BaseUnityPlugin
     public const string PluginGUID = PluginAuthor + "." + PluginName;
     public const string PluginAuthor = "Onyx";
     public const string PluginName = "HalcyonKnight";
-    public const string PluginVersion = "1.1.9";
+    public const string PluginVersion = "1.3.0";
 
 	public static HalcyonKnight Instance;
-	public static ConfigEntry<bool> ChangeShrineCredits { get; set; }
 
 	public void Awake()
     {
 		Log.Init(Logger);
 		Instance = SingletonHelper.Assign(Instance, this);
-		Options.Init();
 
-		AssetAsyncReferenceManager<EntityStateConfiguration>.LoadAsset(new(RoR2_DLC2_Halcyonite.EntityStates_HalcyoniteMonster_ChargeTriLaser_asset)).Completed += (x) =>
+		SwipeHooks.Init();
+
+		AssetAsyncReferenceManager<EntityStateConfiguration>.LoadAsset(new AssetReferenceT<EntityStateConfiguration>(RoR2_DLC2_Halcyonite.EntityStates_HalcyoniteMonster_ChargeTriLaser_asset)).Completed += (x) =>
 		{
 			x.Result.TryModifyFieldValue<float>("baseDuration", 1.5f);
 		};
 
-		AssetAsyncReferenceManager<EntityStateConfiguration>.LoadAsset(new(RoR2_DLC2_Halcyonite.EntityStates_HalcyoniteMonster_TriLaser_asset)).Completed += (x) =>
+		AssetAsyncReferenceManager<EntityStateConfiguration>.LoadAsset(new AssetReferenceT<EntityStateConfiguration>(RoR2_DLC2_Halcyonite.EntityStates_HalcyoniteMonster_TriLaser_asset)).Completed += (x) =>
 		{
-			x.Result.TryModifyFieldValue<float>("blastRadius", 0f); // 4
+			x.Result.TryModifyFieldValue<float>("blastRadius", 0.5f); // 4
+			x.Result.TryModifyFieldValue<float>("damageCoefficient", 5f); //2.5
 		};
 
-		AssetAsyncReferenceManager<EntityStateConfiguration>.LoadAsset(new(RoR2_DLC2_Halcyonite.EntityStates_HalcyoniteMonster_WhirlwindWarmUp_asset)).Completed += (x) =>
+		AssetAsyncReferenceManager<EntityStateConfiguration>.LoadAsset(new AssetReferenceT<EntityStateConfiguration>(RoR2_DLC2_Halcyonite.EntityStates_HalcyoniteMonster_WhirlwindWarmUp_asset)).Completed += (x) =>
 		{
 			x.Result.TryModifyFieldValue<float>("duration", 0.7f); // 0.5
 		};
 
-		AssetAsyncReferenceManager<EntityStateConfiguration>.LoadAsset(new(RoR2_DLC2_Halcyonite.EntityStates_HalcyoniteMonster_WhirlwindPersuitCycle_asset)).Completed += (x) =>
+		AssetAsyncReferenceManager<EntityStateConfiguration>.LoadAsset(new AssetReferenceT<EntityStateConfiguration>(RoR2_DLC2_Halcyonite.EntityStates_HalcyoniteMonster_WhirlwindPersuitCycle_asset)).Completed += (x) =>
 		{
 			x.Result.TryModifyFieldValue<float>("dashSpeedCoefficient", 40f); // 20
 			x.Result.TryModifyFieldValue<float>("decelerateDuration", 0.5f); // 1
 			x.Result.TryModifyFieldValue<float>("dashSafeExitDuration", 3f); // 5
 		};
 
-		AssetAsyncReferenceManager<EntityStateConfiguration>.LoadAsset(new(RoR2_DLC2_Halcyonite.EntityStates_HalcyoniteMonster_GoldenSwipe_asset)).Completed += (x) =>
+		AssetAsyncReferenceManager<EntityStateConfiguration>.LoadAsset(new AssetReferenceT<EntityStateConfiguration>(RoR2_DLC2_Halcyonite.EntityStates_HalcyoniteMonster_GoldenSwipe_asset)).Completed += (x) =>
 		{
-			x.Result.TryModifyFieldValue<float>("baseDuration", 1.5f); // 1
-			//x.Result.TryModifyFieldValue<float>("damageCoefficient", 1.2f); // 1.5
+			x.Result.TryModifyFieldValue<float>("baseDuration", 1.3f); // 1
+			// x.Result.TryModifyFieldValue<float>("damageCoefficient", 1.8f); // 1.5
 		};
 
-		AssetAsyncReferenceManager<EntityStateConfiguration>.LoadAsset(new(RoR2_DLC2_Halcyonite.EntityStates_HalcyoniteMonster_GoldenSlash_asset)).Completed += (x) =>
-		{
-			x.Result.TryModifyFieldValue<float>("baseDuration", 1.1f); // 1
-		};
+		// AssetAsyncReferenceManager<EntityStateConfiguration>.LoadAsset(new(RoR2_DLC2_Halcyonite.EntityStates_HalcyoniteMonster_GoldenSlash_asset)).Completed += (x) =>
+		// {
+		// 	x.Result.TryModifyFieldValue<float>("baseDuration", 1.1f); // 1
+		// };
 
-		AssetAsyncReferenceManager<GameObject>.LoadAsset(new(RoR2_DLC2_Halcyonite.HalcyoniteMaster_prefab)).Completed += (x) =>
+		AssetAsyncReferenceManager<GameObject>.LoadAsset(new AssetReferenceT<GameObject>(RoR2_DLC2_Halcyonite.HalcyoniteMaster_prefab)).Completed += (x) =>
 		{
 			GameObject master = x.Result;
 			foreach (AISkillDriver skillDriver in master.GetComponents<AISkillDriver>())
@@ -131,25 +133,25 @@ public sealed class HalcyonKnight : BaseUnityPlugin
 			HalcAfterTPController afterTPController = master.AddComponent<HalcAfterTPController>();
 			afterTPController.combatDirector = afterTPDirector;
 
-			AssetAsyncReferenceManager<DirectorCardCategorySelection>.LoadAsset(new(RoR2_DLC2.dccsShrineHalcyoniteActivationMonsterWave_asset)).Completed += (x) =>
+			AssetAsyncReferenceManager<DirectorCardCategorySelection>.LoadAsset(new AssetReferenceT<DirectorCardCategorySelection>(RoR2_DLC2.dccsShrineHalcyoniteActivationMonsterWave_asset)).Completed += (x) =>
 			{
 				afterTPDirector.monsterCards = x.Result;
 			};
 		};
 
-		AssetAsyncReferenceManager<SkillDef>.LoadAsset(new(RoR2_DLC2_Halcyonite.HalcyoniteMonsterWhirlwindRush_asset)).Completed += (x) =>
+		AssetAsyncReferenceManager<SkillDef>.LoadAsset(new AssetReferenceT<SkillDef>(RoR2_DLC2_Halcyonite.HalcyoniteMonsterWhirlwindRush_asset)).Completed += (x) =>
 		{
 			SkillDef swipeSkill = x.Result;
 			swipeSkill.baseRechargeInterval = 15;
 		};
 
-		AssetAsyncReferenceManager<SkillDef>.LoadAsset(new(RoR2_DLC2_Halcyonite.HalcyoniteMonsterGoldenSlash_asset)).Completed += (x) =>
+		AssetAsyncReferenceManager<SkillDef>.LoadAsset(new AssetReferenceT<SkillDef>(RoR2_DLC2_Halcyonite.HalcyoniteMonsterGoldenSlash_asset)).Completed += (x) =>
 		{
 			SkillDef swipeSkill = x.Result;
 			swipeSkill.baseRechargeInterval = 7;
 		};
 
-		AssetAsyncReferenceManager<GameObject>.LoadAsset(new(RoR2_DLC2_Halcyonite.HalcyoniteBody_prefab)).Completed += (x) =>
+		AssetAsyncReferenceManager<GameObject>.LoadAsset(new AssetReferenceT<GameObject>(RoR2_DLC2_Halcyonite.HalcyoniteBody_prefab)).Completed += (x) =>
 		{
 			if (x.Result.TryGetComponent(out CharacterBody body))
 			{

@@ -5,13 +5,13 @@ using UnityEngine;
 using RoR2.CharacterAI;
 using Logger;
 
+[assembly: MonoDetourTargets(typeof(HalcyonFixes.FixedSlash))]
+
 namespace HalcyonKnight;
 
-[MonoDetourTargets(typeof(HalcyonFixes.FixedSlash))]
-public class LibraryClassHooks
+public class SwipeHooks
 {
-	[MonoDetourHookInitialize]
-	static void HalcyonFixesHooks()
+	public static void Init()
 	{
 		Md.HalcyonFixes.FixedSlash.OnEnter.Postfix((self) =>
 		{

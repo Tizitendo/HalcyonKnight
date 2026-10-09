@@ -14,9 +14,6 @@ Makes the halcyonite fight more dynamic and harder
 
 * Shrine:
     * Halcyonites spawned from shrines count as bosses
-    * Added option to increase stage shrine 1 credit cost 0 -> 30. for reference stage 2+ is 50. (default: disabled)
-    * Spawns golems if player without money stands in the zone
-    * Doubled charging speed
 
 * Whirlwind:
     * Increased speed by 50%
@@ -29,13 +26,12 @@ Makes the halcyonite fight more dynamic and harder
     * Decreased width: 4m -> 2m
     * Decreased hitbox length: 13m -> 12m
     * Max distance: 20m -> 18m
-    * Attack speed: -50%
+    * Attack speed: -30%
 
 * Swipe:
     * Mostly redone to make sure you can jump over it
     * Halcyonite can now move during this attack
     * Hitbox length: 14m -> 15m
-    * Attack speed: -10%
     * Max distance: 15m -> 10m
 
 * Laser:
@@ -44,7 +40,8 @@ Makes the halcyonite fight more dynamic and harder
     * Interrupts when you get close
     * Decreased time to activate: 3s -> 1.5s
     * Minimum distance: 10m
-    * Aoe: 4m -> 2m
+    * Aoe: 4m -> 0.5m
+    * Damage: +100%
 
 ## Contact
 For questions or bug reports, you can find me in the [RoR2 Modding Server](https://discord.gg/YxEdVK7xWM) @Onyx

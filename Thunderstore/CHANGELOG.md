@@ -1,3 +1,14 @@
+## 1.3.0
+* Updated to hc
+* removed most shrine changes as they are now basegame lol
+
+## 1.2.2
+* Increased halcs laser damage
+* Increased halcs laser explosion radius a tiny amount
+* Increased halcs poke and swipe speed
+* Fixed swipe hitbox height adjustment that broke in a previous update
+* Fixed an error with the tether vfx
+
 ## 1.2.1
 * Doubled shrine charging speed
 * Standing in the zone without any money now spawns golems
