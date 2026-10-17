@@ -1,3 +1,6 @@
+## 1.3.1
+* Halcyonites spawned from stage 1 shrines are now bosses again
+
 ## 1.3.0
 * Updated to hc
 * removed most shrine changes as they are now basegame lol

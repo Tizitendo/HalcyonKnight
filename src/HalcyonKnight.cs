@@ -29,7 +29,7 @@ public sealed class HalcyonKnight : BaseUnityPlugin
     public const string PluginGUID = PluginAuthor + "." + PluginName;
     public const string PluginAuthor = "Onyx";
     public const string PluginName = "HalcyonKnight";
-    public const string PluginVersion = "1.3.0";
+    public const string PluginVersion = "1.3.1";
 
 	public static HalcyonKnight Instance;
 
